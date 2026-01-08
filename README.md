@@ -55,3 +55,46 @@ Compile: `as asm_functions.s -o build/asm_functions.o && g++ asm_interop_example
 
 **Why This Matters:**
 This binary compatibility is why you can link C libraries with C++ programs, write performance-critical code in assembly and call it from C++, and use Fortran scientific libraries from C/C++ - all without marshalling, serialization, or foreign function interfaces (FFI).
+
+## Day 3 - January 8, 2026
+
+**Topic:** Deep dive into the `operator` keyword - grammar, compilation, and linking
+
+Today we explored how the `operator` keyword works from the compiler's perspective, including parsing, name mangling, and how operator overloading is just syntactic sugar for function calls.
+
+**Key learnings:**
+
+### Grammar Level (Parsing)
+- `operator+` is literally a **function name**, not special syntax
+- Grammar rule: `operator-function-id ::= "operator" operator-symbol`
+- The compiler parses it as a single identifier with special meaning
+- Valid in function declarations, friend declarations, and conversion operators
+
+### Compiler Transformation
+When you write: `a + b`
+1. Compiler checks if `a` is a user-defined type
+2. Looks for `operator+` member function or free function
+3. **Transforms to**: `a.operator+(b)` (regular function call)
+4. Generates standard function call machine code
+
+**No special "operator machine code"** - operators are just functions!
+
+### Name Mangling (Linking)
+```
+Demo::operator+(int) → __ZN4DemoplEi
+```
+- Each operator gets a 2-letter code: `pl`(+), `mi`(-), `ls`(<<), `eq`(==), `ix`([]), `cl`(())
+- Mangling encodes class name, operator type, and parameter types
+- Linker uses mangled names to connect calls to definitions
+- Tool `c++filt` demangles names for humans: `c++filt __ZN4DemoplEi`
+
+### The Compilation Pipeline
+1. **Compile time**: `extern` tells compiler "trust me, this exists elsewhere"
+2. **Link time**: Linker matches symbol names using `nm` to view symbol tables
+3. **Runtime**: Loader puts executable in memory with all symbols resolved
+
+**Key insight:** You can call operator functions directly! `a.operator+(b)` and `a + b` compile to identical machine code.
+
+**Files created:** `operator_keyword.cpp`, `operator_grammar.cpp`
+
+Compile: `g++ operator_keyword.cpp -o build/operator_keyword`
