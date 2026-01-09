@@ -98,3 +98,56 @@ Demo::operator+(int) → __ZN4DemoplEi
 **Files created:** `operator_keyword.cpp`, `operator_grammar.cpp`
 
 Compile: `g++ operator_keyword.cpp -o build/operator_keyword`
+
+## Day 4 - January 9, 2026
+
+**Topic:** Member initializer lists and brace initialization `{}`
+
+Today we explored two fundamental C++ initialization mechanisms: member initializer lists in constructors and the brace initialization syntax introduced in C++11.
+
+**Key learnings:**
+
+### Member Initializer Lists
+Syntax: `Constructor(params) : member1{value1}, member2{value2} { body }`
+
+**Why use them:**
+- **Required for**: `const` members, reference members, base class constructors
+- **More efficient**: Direct initialization (1 step) vs default-construct + assign (2 steps)
+- **Initialization order**: Members initialized in declaration order, not list order
+- **Best practice**: Always prefer initializer lists over assignment in constructor body
+
+**Example:**
+```cpp
+Vector::Vector(int s) : elem{new double[s]}, sz{s} { }
+// Better than: Vector(int s) { elem = new double[s]; sz = s; }
+```
+
+### Brace Initialization `{}` - Grammar & Compiler Perspective
+
+**Grammar:** `braced-init-list ::= '{' initializer-list? '}'`
+
+**Compiler Pipeline:**
+1. **Lexer**: Tokenizes `{` and `}` as LBRACE, RBRACE
+2. **Parser**: Creates `BracedInitList` AST node
+3. **Semantic Analysis**: 
+   - Checks for narrowing conversions (compile-time safety!)
+   - Determines initialization type (constructor vs aggregate)
+   - Overload resolution: prefers `std::initializer_list` constructor
+4. **Code Generation**: Direct memory write or constructor call (zero overhead)
+
+**Advantages over `=` and `()`:**
+- **Prevents narrowing**: `int x{3.14}` → compile error (vs warning with `=` or `()`)
+- **Aggregate initialization**: Works with structs without constructors
+- **Solves "Most Vexing Parse"**: `Data d{Data{}}` is clearly an object
+- **Uniform syntax**: Same `{}` works for all types (built-in, class, aggregate)
+
+**Overload Resolution Priority:**
+1. `std::initializer_list<T>` constructor (if exists)
+2. Matching regular constructor
+3. Aggregate initialization (if no constructors)
+
+**Key insight:** Brace initialization provides **compile-time type safety with zero runtime overhead** - all narrowing checks happen during compilation, producing the same assembly as old-style initialization.
+
+**Files created:** `initializer_list.cpp`, `brace_initialization.cpp`, `brace_init_compiler.cpp`
+
+Compile: `g++ initializer_list.cpp -o build/initializer_list`
