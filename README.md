@@ -151,3 +151,87 @@ Vector::Vector(int s) : elem{new double[s]}, sz{s} { }
 **Files created:** `initializer_list.cpp`, `brace_initialization.cpp`, `brace_init_compiler.cpp`
 
 Compile: `g++ initializer_list.cpp -o build/initializer_list`
+
+## Day 5 - January 10, 2026
+
+**Topic:** Concrete types - representation, memory layout, and efficiency
+
+Today we explored what makes a type "concrete" and why this design principle is fundamental to C++'s efficiency. A concrete type has its representation as part of its definition, enabling the compiler to know its exact size at compile time.
+
+**Key Concept: "Representation is Part of Definition"**
+
+A concrete type like `Vector` has all its data members visible:
+```cpp
+class Vector {
+    double* elem;  // 8 bytes - pointer IN the object
+    int sz;        // 4 bytes - size IN the object
+};  // Total: 16 bytes (compiler knows this!)
+```
+
+**Even though elements live on the heap**, the **pointer** is inside the Vector object. The compiler knows Vector is always 16 bytes, regardless of how many elements it contains.
+
+**Memory Layout:**
+- Vector object (16 bytes): on stack at address 0x16b612b68
+- Elements (variable size): on heap at address 0x104f0dc50
+- Distance between them: **1.7 GB** (completely different memory regions!)
+- But the pointer connecting them is **in** the Vector object
+
+**The 4 Benefits of Concrete Types:**
+
+### 1. Stack/Static/Embedded Allocation
+```cpp
+Vector v(100);        // Object on stack (16 bytes, not 800!)
+static Vector v2(50); // Static storage
+class Line {
+    Point start;      // Point embedded INSIDE Line
+    Point end;
+};
+```
+No heap allocation required for the object itself. Fast allocation (just move stack pointer).
+
+### 2. Direct Reference (No Pointer Indirection)
+```cpp
+Vector v(5);
+v[0] = 3.14;  // 'v' is the object, not a pointer
+```
+Compare with abstract types that require `Shape* s = new Circle()` and `s->draw()`.
+
+### 3. Immediate and Complete Initialization
+```cpp
+Vector v(5);  // 100% ready after construction
+```
+Constructor guarantees all invariants. No separate `.init()` or `.setup()` methods needed.
+
+### 4. Copy Objects (Value Semantics)
+```cpp
+Vector v1(5);
+Vector v2 = v1;  // Independent copy
+```
+Objects are self-contained and can be copied because compiler knows their size.
+
+**Efficiency Comparison:**
+
+**Concrete types (Array of 1000 Points):**
+- ONE allocation, contiguous memory (8000 bytes in one block)
+- Cache-friendly: CPU prefetches next elements
+- Direct access: no pointer chasing
+
+**Abstract types (Array of 1000 Shapes):**
+- 1000 separate heap allocations
+- Scattered memory: poor cache performance
+- Pointer indirection overhead
+
+**Result:** 10-100x performance difference favoring concrete types!
+
+**Contrast with Abstract Types:**
+Abstract types (with pure virtual functions) don't have fixed representation:
+- `sizeof(Circle) = 16 bytes`, `sizeof(Rectangle) = 24 bytes`
+- Can't allocate on stack - don't know size without knowing derived class
+- Must use pointers/references: `Shape* s = &circle`
+- Can't copy directly (object slicing problem)
+
+**Key insight:** Concrete types provide optimal efficiency by making the representation visible to the compiler, enabling stack allocation, direct access, and cache-friendly memory layout - all with zero runtime overhead.
+
+**Files created:** `concrete_types.cpp`, `concrete_vs_abstract.cpp`, `memory_visualization.cpp`
+
+Compile: `g++ concrete_types.cpp -o build/concrete_types`
